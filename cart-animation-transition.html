@@ -89,7 +89,7 @@
             <h2 :title="title">{{title}}</h2>
 
             <!-- 批量关闭弹窗 -->
-            <button class="toolbar" @click="$bus.$emit('message-close')">关闭弹窗</button>
+            <button v-permission="'admin'" class="toolbar" @click="$bus.$emit('message-close')">关闭弹窗</button>
 
             <!-- 用户输入——🔛 -->
             <!-- 组件化 之前 -->
@@ -147,9 +147,34 @@
     <!-- CDN引入 -->
     <!-- <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script> -->
     <script>
+        const role = 'user';
         // 事件总线
         Vue.prototype.$bus = new Vue();
         // 组件化———————————————————高内聚、低耦合——————————————————————————————————————————————————————
+
+
+        // 过滤器（全局）
+        /* Vue.filter('currency', function (params) {
+            return params
+        })*/
+
+        // 自定义指令
+        Vue.directive('focus', {
+            inserted(el, binding) {
+                el.focus()
+            }
+        })
+
+        Vue.directive('permission', {
+            inserted(el, binding) {
+                console.log(el, binding);
+                // 若指定用户角色与当前角色不匹配，移除当前指令绑定的元素
+                if (role !== binding.value) {
+                    el.parentElement.removeChild(el)
+                }
+            }
+        })
+
         // 课程列表组件——🔛
         Vue.component('course-list', {
             data() {
@@ -174,11 +199,16 @@
                 <div class="course-list" v-else>
                     <div v-for="c in courses" :key="c.name" :style="{backgroundColor: selectedCourse === c ? '#ddd' : 'transparent'}"
                         @click='selectedCourse = c'>
-                        {{ c.name }}——￥{{c.price}}
+                        {{ c.name }}——{{c.price | currency('￥')}}
                     </div>
                 </div>
             </div>
-            `
+            `,
+            filters: {
+                currency(value, symbol = '￥') {
+                    return symbol + value
+                }
+            }
         })
         // 课程列表组件——🔚
 
@@ -189,7 +219,7 @@
                 <div>
                     <!-- 用户输入 -->
                     <p>
-                        <input :value="value" type="text" 
+                        <input :value="value" v-focus type="text" 
                             @input="onInput" 
                             @keydown.enter="addCourse" />
                         <button @click="addCourse">新增</button>
@@ -324,7 +354,6 @@
                     // 显示提示信息
                     // this.show = true
                     this.$refs['msgSuccess'].toggle()
-
                 },
                 // 批量更新商品价格
                 batchUpdate() {
