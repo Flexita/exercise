@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width= , initial-scale=1.0">
+    <title>购物车</title>
+    <style>
+        html,
+        body {
+            padding: 0;
+            margin: 0;
+        }
+
+        .container {
+            padding: 15px;
+            box-sizing: border-box;
+        }
+
+        .active {
+            background-color: #ddd;
+        }
+
+        .message-box {
+            width: 100%;
+            padding: 10px 20px;
+            box-sizing: border-box;
+        }
+
+        .success {
+            background: #4fc08d;
+            border: 1px solid #42b983;
+        }
+
+        .warning {
+            background: #f66;
+            border: 1px solid #d63200;
+        }
+
+        .message-box-close {
+            float: right;
+            color: #fff;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- 宿主文件/App入口 -->
+    <div id="app">
+
+        <!-- 弹窗组件 -->
+        <!-- <message :show="show" @close="show = $event"> -->
+        <!-- <message :show.sync="show" @update:show="show = $event" class="success"></message> -->
+        <message ref='msgSuccess' class="success">
+            <template v-slot:title="slotProps">
+                <strong>{{slotProps.title}}</strong>
+            </template>
+            <template v-slot:default>
+                新增课程成功！
+            </template>
+        </message>
+
+        <message ref='msgWarning' class="warning">
+            <template v-slot:title>
+                <strong>警告</strong>
+            </template>
+            <template v-slot:default>
+                请输入课程名称！
+            </template>
+        </message>
+
+        <div class="container">
+            <!-- 插值文本 -->
+            <h2 :title="title">{{title}}</h2>
+
+            <!-- 批量关闭弹窗 -->
+            <button class="toolbar" @click="$bus.$emit('message-close')">关闭弹窗</button>
+
+            <!-- 用户输入——🔛 -->
+            <!-- 组件化 之前 -->
+            <!-- 组件最终的输出目标应该是虚拟DOM -->
+            <!-- 组件配置 => VueComponent实例 => render() => Virtual DOM => DOM -->
+            <!-- <p>
+                <input v-model="course" type="text" v-on:keydown.enter="addCourse" />
+                <button @click="addCourse">新增</button>
+            </p> -->
+            <!-- 组件化 之后 -->
+            <!-- <course-add @add-course='addCourse'></course-add> -->
+            <!-- 自定义组件——数据双向绑定 -->
+            <course-add v-model="course" @add-course='addCourse'></course-add>
+
+            <!-- <course-add :value="course" @input="course = $event" @add-course='addCourse'></course-add> -->
+            <!-- 用户输入——🔚 -->
+
+
+            <!-- 批量更新价格 -->
+            <p><input type="text" v-model.number='price'><button @click="batchUpdate">更新价格</button></p>
+
+            <!-- 列表渲染——🔛 -->
+            <!-- course-list 组件化 之前-->
+            <!-- 条件渲染 -->
+            <!-- <p v-if="courses.length <= 0">没有任何课程信息</p> -->
+            <!-- 列表渲染_动态绑定class -->
+            <!-- <div v-for="c in courses" :key="c" :class="{active: selectedCourse === c}" @click='selectedCourse = c'>
+                {{ c }}
+            </div> -->
+
+            <!-- 动态绑定style -->
+            <!-- <div class="course-list" v-else>
+                <div v-for="c in courses" :key="c"
+                    :style="{backgroundColor: selectedCourse === c ? '#ddd' : 'transparent'}"
+                    @click='selectedCourse = c'>
+                    {{ c }}
+                </div>
+            </div> -->
+
+            <!-- course-list 组件化 之后-->
+            <course-list :courses="courses"></course-list>
+            <!-- 列表渲染——🔚 -->
+
+            <!-- 商品总数 -->
+            <p>
+                <!-- 表达式 -->
+                <!-- 课程总数：{{courses.length + ' 门'}} -->
+                <!-- 计算属性 -->
+                <!-- 课程总数：{{total}} -->
+                <!-- 监听器 -->
+                课程总数：{{totalCount}}
+            </p>
+        </div>
+
+    </div>
+    <script src="./vue.js"></script>
+    <!-- CDN引入 -->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script> -->
+    <script>
+        // 事件总线
+        Vue.prototype.$bus = new Vue();
+
+        // 组件化———————————————————高内聚、低耦合——————————————————————————————————————————————————————
+        // 课程列表组件——🔛
+        Vue.component('course-list', {
+            data() {
+                return {
+                    selectedCourse: undefined
+                }
+            },
+            // 接收的参数
+            props: {
+                courses: {
+                    type: Array,
+                    default: []
+                },
+            },
+            template: `<div>
+                <p v-if="courses.length <= 0">没有任何课程信息</p>
+                <!-- 列表渲染_动态绑定class -->
+                <!-- <div v-for="c in courses" :key="c" :class="{active: selectedCourse === c}" @click='selectedCourse = c'>
+                    {{ c }}
+                </div> -->
+                <!-- 动态绑定style -->
+                <div class="course-list" v-else>
+                    <div v-for="c in courses" :key="c.name" :style="{backgroundColor: selectedCourse === c ? '#ddd' : 'transparent'}"
+                        @click='selectedCourse = c'>
+                        {{ c.name }}——￥{{c.price}}
+                    </div>
+                </div>
+            </div>
+            `
+        })
+        // 课程列表组件——🔚
+
+        // 新增课程组件——🔛
+        Vue.component('course-add', {
+            props: ['value'],
+            template: `
+                <div>
+                    <!-- 用户输入 -->
+                    <p>
+                        <input :value="value" type="text" 
+                            @input="onInput" 
+                            @keydown.enter="addCourse" />
+                        <button @click="addCourse">新增</button>
+                    </p>
+                </div>
+            `,
+            methods: {
+                addCourse() {
+                    // 派发时间，通知父组件更新数据
+                    this.$emit('add-course')
+                },
+                // 组件输入事件
+                onInput(e) {
+                    this.$emit('input', e.target.value)
+                },
+            },
+
+        })
+        // 新增课程组件——🔚
+
+        // 弹窗组件——🔛
+        Vue.component('message', {
+            // props: ['show'],
+            data() {
+                return {
+                    show: false
+                }
+            },
+            template: `
+                <div class="message-box" v-if="show">
+                    <!-- 通过slot获取传入参数 -->
+                    <slot name="title" title="恭喜">默认标题</slot>
+                    <slot></slot>
+                    <span class="message-box-close" @click="toggle">X</span>
+                </div>
+            `,
+            mounted() {
+                this.$bus.$on('message-close', () => {
+                    // this.$emit('update:show', false)
+                    this.toggle()
+                })
+            },
+            methods: {
+                toggle() {
+                    this.show = !this.show
+                }
+            },
+        })
+        // 弹窗组件——🔚
+
+        // 模拟异步数据调用
+        function getCourses(params) {
+            return new Promise(resolve => {
+                setTimeout(() => {
+                    resolve([{
+                        name: 'web全栈'
+                    }, {
+                        name: 'web高级'
+                    }])
+                }, 2000)
+            })
+        }
+
+        // 1. 创建Vue实例————————————————————————————————————————————————————————————————————————————————
+        const app = new Vue({
+            el: '#app',
+            data() {
+                return {
+                    title: '购物车呀',
+                    course: undefined,
+                    courses: [],
+                    totalCount: 0,
+                    // show: false,
+                    // showWarn: false,
+                    price: 0
+                }
+            },
+            // 能用computed用computed
+            computed: {
+                total() {
+                    // 计算属性是有缓存性质的，如果this.courses.length值没有变化，total是不会重新计算的，页面不会重新渲染
+                    return this.courses.length + ' 门'
+                }
+            },
+            // 默认情况下watch，初始化时不会立即执行
+            /* watch: {
+                courses(newValue, oldValue) {
+                    this.totalCount = newValue.length + ' 门'
+                }
+            }, */
+            // 开销很大的的异步操作要用watch
+            watch: {
+                courses: {
+                    immediate: true, // 立即执行一次
+                    // deep: true, // 监听深层次嵌套数据
+                    handler(newValue, oldValue) { // 监听方法
+                        this.totalCount = newValue.length + ' 门'
+                    }
+                }
+            },
+            // 创建完成
+            async created() {
+                // 组件实例已创建，未挂载，DOM不存在
+                const courses = await getCourses();
+                this.courses = courses
+                // 批量更新商品价格
+                this.batchUpdate()
+            },
+            // 挂载完成
+            mounted() {
+                // 已挂载实例，可以访问DOM
+            },
+            methods: {
+                // 新增课程
+                addCourse() {
+                    console.log(this.course, '------------->>>');
+                    if (!this.course) {
+                        // 显示错误信息
+                        // this.showWarn = true
+                        this.$refs['msgWarning'].toggle()
+                        return false
+                    }
+                    // 添加course到数组
+                    this.courses.push({
+                        name: this.course
+                    })
+                    this.batchUpdate();
+                    this.course = undefined
+                    // 显示提示信息
+                    // this.show = true
+                    this.$refs['msgSuccess'].toggle()
+
+                },
+                // 批量更新商品价格
+                batchUpdate() {
+                    this.courses.map(el => {
+                        this.$set(el, 'price', this.price)
+                        /* return {
+                        name: el.name,
+                        price: this.price
+                        } */
+                    })
+                },
+            },
+        })
+    </script>
+</body>
+
+</html>

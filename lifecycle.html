@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>vue生命周期</title>
+</head>
+
+<body id="body">
+  <div id="app">
+    <h1>vue生命周期</h1>
+    <p>{{foo}}</p>
+    <button @click="destory">销毁</button>
+  </div>
+  <script src="./vue.js"></script>
+  <script>
+    const app = new Vue({
+      el: '#app',
+      data() {
+        return {
+          foo: 'foo',
+        }
+      },
+      methods: {
+        destory() {
+          this.$destroy()
+        }
+      },
+      beforeCreate() {
+        console.log('beforeCreate');;
+      },
+      created() {
+        console.log('created ' + this.$el);;
+      },
+      beforeMount() {
+        console.log('beforeMount');
+      },
+      mounted() {
+        setTimeout(() => {
+          this.foo = 'foooooo'
+        }, 2000)
+        console.log('mounted ' + this.$el);
+      },
+      beforeUpdate() {
+        console.log('beforeUpdate');
+      },
+      updated() {
+        console.log('updated');
+      },
+      beforeDestroy() {
+        console.log('beforeDestroy ' + this.$el);
+      },
+      destroyed() {
+        console.log('destroyed ' + this.$el);
+      },
+    })
+  </script>
+</body>
+
+</html>
