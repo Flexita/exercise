@@ -86,7 +86,10 @@
 
         <div class="container">
             <!-- 插值文本 -->
-            <h2 :title="title">{{title}}</h2>
+            <h2 :title="title" v-text="title"></h2>
+
+            <!-- 插件使用 -->
+            <heading></heading>
 
             <!-- 批量关闭弹窗 -->
             <button v-permission="'admin'" class="toolbar" @click="$bus.$emit('message-close')">关闭弹窗</button>
@@ -144,14 +147,33 @@
         </div>
     </div>
     <script src="./vue.js"></script>
+    <!-- 引入插件 -->
+    <script src="./plugins//heading.js"></script>
     <!-- CDN引入 -->
     <!-- <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script> -->
     <script>
         const role = 'user';
         // 事件总线
         Vue.prototype.$bus = new Vue();
-        // 组件化———————————————————高内聚、低耦合——————————————————————————————————————————————————————
+        // 混入
+        const Mixin = {
+            data() {
+                return {
+                    say: 'Say hello from mixin!'
+                }
+            },
+            created() {
+                // this表示组件的实例
+                this.hello()
+            },
+            methods: {
+                hello() {
+                    console.log(this.say, '==============>>>')
+                }
+            }
+        }
 
+        // 组件化———————————————————高内聚、低耦合——————————————————————————————————————————————————————
 
         // 过滤器（全局）
         /* Vue.filter('currency', function (params) {
@@ -167,7 +189,6 @@
 
         Vue.directive('permission', {
             inserted(el, binding) {
-                console.log(el, binding);
                 // 若指定用户角色与当前角色不匹配，移除当前指令绑定的元素
                 if (role !== binding.value) {
                     el.parentElement.removeChild(el)
@@ -214,6 +235,7 @@
 
         // 新增课程组件——🔛
         Vue.component('course-add', {
+            mixins: [Mixin],
             props: ['value'],
             template: `
                 <div>
@@ -292,7 +314,7 @@
             el: '#app',
             data() {
                 return {
-                    title: '购物车呀',
+                    title: '购物车',
                     course: undefined,
                     courses: [],
                     totalCount: 0,
@@ -359,10 +381,6 @@
                 batchUpdate() {
                     this.courses.map(el => {
                         this.$set(el, 'price', this.price)
-                        /* return {
-                        name: el.name,
-                        price: this.price
-                        } */
                     })
                 },
             },
